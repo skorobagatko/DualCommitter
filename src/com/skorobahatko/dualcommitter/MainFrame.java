@@ -373,7 +373,16 @@ public class MainFrame extends JFrame {
 	private String[] getStagedChangesList(String path) throws Exception {
 		String command = "git diff --name-only --cached";
 		Process process = executeCommand(command, path);
-
+		
+		if (process.exitValue() == 0) {
+			List<String> result = readProcessExecutionResult(process);
+			return result.toArray(new String[0]);
+		} else {
+			return new String[0];
+		}
+	}
+	
+	private List<String> readProcessExecutionResult(Process process) throws IOException {
 		List<String> result = new ArrayList<>();
 		BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
 		String line;
@@ -493,7 +502,10 @@ public class MainFrame extends JFrame {
 
 	private Process executeCommand(String command, String dir) throws Exception {
 		Process process = Runtime.getRuntime().exec("cmd /c " + command, null, new File(dir));
-		process.waitFor();
+		
+		if (!process.waitFor(1, TimeUnit.SECONDS)) {
+			process.destroy();
+		}
 
 		return process;
 	}
