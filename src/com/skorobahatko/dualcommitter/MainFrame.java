@@ -357,14 +357,14 @@ public class MainFrame extends JFrame {
 	}
 
 	private String[] getUnstagedChangesList(String path) throws Exception {
-		String command = "git ls-files --deleted --modified --others";
+		String command = "git ls-files --deleted --modified --others --exclude-standard";
 		Process process = executeCommand(command, path);
 
-		List<String> result = new ArrayList<>();
-		BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-		String line;
-		while ((line = reader.readLine()) != null) {
-			result.add(line);
+		if (process.exitValue() == 0) {
+			List<String> result = readProcessExecutionResult(process);
+			return result.toArray(new String[0]);
+		} else {
+			return new String[0];
 		}
 
 		return result.toArray(new String[0]);
