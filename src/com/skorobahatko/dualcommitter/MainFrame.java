@@ -5,29 +5,38 @@ import java.awt.EventQueue;
 import java.awt.Font;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
-import javax.swing.JFrame;
-import javax.swing.JPanel;
-import javax.swing.border.EmptyBorder;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
-import javax.swing.JTextField;
-import javax.swing.JButton;
-import javax.swing.JFileChooser;
+import javax.swing.BorderFactory;
 import javax.swing.DefaultListSelectionModel;
 import javax.swing.GroupLayout;
 import javax.swing.GroupLayout.Alignment;
-import javax.swing.LayoutStyle.ComponentPlacement;
-import javax.swing.ListSelectionModel;
+import javax.swing.JButton;
+import javax.swing.JFileChooser;
+import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
+import javax.swing.JTextField;
+import javax.swing.LayoutStyle.ComponentPlacement;
+import javax.swing.ListSelectionModel;
+import javax.swing.UIManager;
+import javax.swing.border.Border;
+import javax.swing.border.EmptyBorder;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+import javax.swing.plaf.basic.BasicScrollBarUI;
 
 @SuppressWarnings("serial")
 public class MainFrame extends JFrame {
+	
+	private static final Border BORDER = BorderFactory.createLineBorder(Color.LIGHT_GRAY);
 
 	private JPanel contentPane;
 	private JFileChooser fileChooser;
@@ -35,15 +44,19 @@ public class MainFrame extends JFrame {
 	private JTextField repo1PathTextField;
 	private JButton repo1ChooseButton;
 	private JLabel unstagedChangesRepo1Label;
+	private JScrollPane unstagedChangesRepo1ScrollPane;
 	private JList<String> unstagedChangesRepo1List;
 	private JLabel stagedChangesRepo1Label;
+	private JScrollPane stagedChangesRepo1ScrollPane;
 	private JList<String> stagedChangesRepo1List;
 
 	private JTextField repo2PathTextField;
 	private JButton repo2ChooseButton;
 	private JLabel unstagedChangesRepo2Label;
+	private JScrollPane unstagedChangesRepo2ScrollPane;
 	private JList<String> unstagedChangesRepo2List;
 	private JLabel stagedChangesRepo2Label;
+	private JScrollPane stagedChangesRepo2ScrollPane;
 	private JList<String> stagedChangesRepo2List;
 
 	private JLabel commitMessageLabel;
@@ -73,37 +86,33 @@ public class MainFrame extends JFrame {
 	private void initComponents() throws InterruptedException {
 		initializeFileChooser();
 		initializeRepoPathTextFields();
-
 		repo1ChooseButton = new JButton("Choose");
 		repo2ChooseButton = new JButton("Choose");
 		initializeChooseRepoButton(repo1ChooseButton, repo1PathTextField);
 		initializeChooseRepoButton(repo2ChooseButton, repo2PathTextField);
-
-		unstagedChangesRepo1Label = new JLabel("Unstaged Changes");
-		unstagedChangesRepo2Label = new JLabel("Unstaged Changes");
-
 		initializeUnstagedChangesLists();
-
-		stagedChangesRepo1Label = new JLabel("Staged Changes");
-		stagedChangesRepo2Label = new JLabel("Staged Changes");
-
 		initializeStagedChangesLists();
-
-		commitMessageLabel = new JLabel("Commit Message");
-		commitMessageTextArea = new JTextArea();
-
+		initLabels();
+		initCommitMessageTextField();
 		initStageChangesButton();
 		initUnstageChangesButton();
 		initCommitButton();
 	}
 
 	private void initMainFrame() {
+		try {
+			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
 		setTitle("DualCommitter");
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setBounds(100, 100, 627, 628);
 		setResizable(false);
 		contentPane = new JPanel();
 		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
+		contentPane.setBackground(Color.DARK_GRAY);
 		setContentPane(contentPane);
 
 		GroupLayout gl_contentPane = new GroupLayout(contentPane);
@@ -126,9 +135,9 @@ public class MainFrame extends JFrame {
 																.addGap(178))
 												.addGroup(gl_contentPane.createSequentialGroup().addGroup(gl_contentPane
 														.createParallelGroup(Alignment.TRAILING)
-														.addComponent(stagedChangesRepo1List, Alignment.LEADING,
+														.addComponent(stagedChangesRepo1ScrollPane, Alignment.LEADING,
 																GroupLayout.DEFAULT_SIZE, 273, Short.MAX_VALUE)
-														.addComponent(unstagedChangesRepo1List, Alignment.LEADING,
+														.addComponent(unstagedChangesRepo1ScrollPane, Alignment.LEADING,
 																GroupLayout.DEFAULT_SIZE, 273, Short.MAX_VALUE)
 														.addGroup(gl_contentPane.createSequentialGroup()
 																.addComponent(repo1PathTextField)
@@ -139,7 +148,7 @@ public class MainFrame extends JFrame {
 												.addGroup(gl_contentPane.createParallelGroup(
 														Alignment.LEADING)
 														.addGroup(gl_contentPane.createSequentialGroup()
-																.addComponent(stagedChangesRepo2List,
+																.addComponent(stagedChangesRepo2ScrollPane,
 																		GroupLayout.PREFERRED_SIZE, 273,
 																		GroupLayout.PREFERRED_SIZE)
 																.addPreferredGap(ComponentPlacement.RELATED))
@@ -168,7 +177,7 @@ public class MainFrame extends JFrame {
 																								GroupLayout.PREFERRED_SIZE,
 																								77,
 																								GroupLayout.PREFERRED_SIZE))
-																				.addComponent(unstagedChangesRepo2List,
+																				.addComponent(unstagedChangesRepo2ScrollPane,
 																						GroupLayout.PREFERRED_SIZE, 273,
 																						GroupLayout.PREFERRED_SIZE))
 																		.addGroup(gl_contentPane.createSequentialGroup()
@@ -207,18 +216,18 @@ public class MainFrame extends JFrame {
 						.addComponent(unstagedChangesRepo2Label))
 				.addPreferredGap(ComponentPlacement.RELATED)
 				.addGroup(gl_contentPane.createParallelGroup(Alignment.BASELINE)
-						.addComponent(unstagedChangesRepo1List, GroupLayout.PREFERRED_SIZE, 159,
+						.addComponent(unstagedChangesRepo1ScrollPane, GroupLayout.PREFERRED_SIZE, 159,
 								GroupLayout.PREFERRED_SIZE)
-						.addComponent(unstagedChangesRepo2List, GroupLayout.PREFERRED_SIZE, 159,
+						.addComponent(unstagedChangesRepo2ScrollPane, GroupLayout.PREFERRED_SIZE, 159,
 								GroupLayout.PREFERRED_SIZE))
 				.addGap(18)
 				.addGroup(gl_contentPane.createParallelGroup(Alignment.BASELINE).addComponent(stagedChangesRepo1Label)
 						.addComponent(stagedChangesRepo2Label))
 				.addPreferredGap(ComponentPlacement.RELATED)
 				.addGroup(gl_contentPane.createParallelGroup(Alignment.BASELINE)
-						.addComponent(stagedChangesRepo1List, GroupLayout.PREFERRED_SIZE, 159,
+						.addComponent(stagedChangesRepo1ScrollPane, GroupLayout.PREFERRED_SIZE, 159,
 								GroupLayout.PREFERRED_SIZE)
-						.addComponent(stagedChangesRepo2List, GroupLayout.PREFERRED_SIZE, 159,
+						.addComponent(stagedChangesRepo2ScrollPane, GroupLayout.PREFERRED_SIZE, 159,
 								GroupLayout.PREFERRED_SIZE))
 				.addGap(18).addComponent(commitMessageLabel).addPreferredGap(ComponentPlacement.RELATED)
 				.addGroup(gl_contentPane.createParallelGroup(Alignment.BASELINE)
@@ -244,18 +253,31 @@ public class MainFrame extends JFrame {
 		repo1PathTextField = new JTextField();
 		repo1PathTextField.setColumns(10);
 		repo1PathTextField.setFont(font);
-		repo1PathTextField.setText("D:\\tmp\\test");
+		repo1PathTextField.setText("D:\\workspace\\MultiCommiter4");
 		repo1PathTextField.setEditable(false);
+		repo1PathTextField.setBackground(Color.DARK_GRAY);
+		repo1PathTextField.setForeground(Color.LIGHT_GRAY);
+		repo1PathTextField.setBorder(BorderFactory.createCompoundBorder(BORDER,
+	            BorderFactory.createEmptyBorder(4, 4, 4, 4)));
 
 		repo2PathTextField = new JTextField();
 		repo2PathTextField.setColumns(10);
 		repo2PathTextField.setFont(font);
-		repo2PathTextField.setText("D:\\tmp\\test2");
+		repo2PathTextField.setText("D:\\\\workspace\\\\MultiCommiter4");
 		repo2PathTextField.setEditable(false);
+		repo2PathTextField.setBackground(Color.DARK_GRAY);
+		repo2PathTextField.setForeground(Color.LIGHT_GRAY);
+		repo2PathTextField.setBorder(BorderFactory.createCompoundBorder(BORDER,
+	            BorderFactory.createEmptyBorder(4, 4, 4, 4)));
 		
-		repo1PathTextField.getDocument().addDocumentListener(new DocumentListener() {
+		repo1PathTextField.getDocument().addDocumentListener(getPathTextFieldChangeListener());
+		repo2PathTextField.getDocument().addDocumentListener(getPathTextFieldChangeListener());
+	}
+	
+	private DocumentListener getPathTextFieldChangeListener() {
+		return new DocumentListener() {
 			@Override
-			public void insertUpdate(DocumentEvent e) {
+			public void insertUpdate(DocumentEvent e) {				
 				try {
 					fillUnstagedChangesLists();
 					fillStagedChangesLists();
@@ -271,10 +293,13 @@ public class MainFrame extends JFrame {
 			@Override
 			public void changedUpdate(DocumentEvent e) {
 			}
-		});
+		};
 	}
 
 	private void initializeChooseRepoButton(JButton button, JTextField pathToRepoTextField) {
+		button.setBackground(Color.DARK_GRAY);
+		button.setForeground(Color.LIGHT_GRAY);
+		
 		button.addActionListener(e -> {
 			if (fileChooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
 				File pathToRepo = fileChooser.getSelectedFile();
@@ -283,20 +308,44 @@ public class MainFrame extends JFrame {
 		});
 	}
 
-	private void initializeUnstagedChangesLists() {
+	private void initializeUnstagedChangesLists() {		
 		unstagedChangesRepo1List = new JList<>();
-		unstagedChangesRepo2List = new JList<>();
 		unstagedChangesRepo1List.setSelectionModel(getDefaultSelectionModel());
+		unstagedChangesRepo1List.setBackground(Color.DARK_GRAY);
+		unstagedChangesRepo1List.setForeground(Color.RED);
+		
+		unstagedChangesRepo1ScrollPane = new JScrollPane();
+		unstagedChangesRepo1ScrollPane.setViewportView(unstagedChangesRepo1List);
+		unstagedChangesRepo1ScrollPane.setBorder(BORDER);
+		unstagedChangesRepo1ScrollPane.getVerticalScrollBar().setUI(getScrollBarUI());
+		unstagedChangesRepo1ScrollPane.getHorizontalScrollBar().setUI(getScrollBarUI());
+		
+		unstagedChangesRepo2List = new JList<>();		
 		unstagedChangesRepo2List.setSelectionModel(getDefaultSelectionModel());
-
+		unstagedChangesRepo2List.setBackground(Color.DARK_GRAY);
+		unstagedChangesRepo2List.setForeground(Color.RED);
+		
+		unstagedChangesRepo2ScrollPane = new JScrollPane();
+		unstagedChangesRepo2ScrollPane.setViewportView(unstagedChangesRepo2List);
+		unstagedChangesRepo2ScrollPane.setBorder(BORDER);
+		unstagedChangesRepo2ScrollPane.getVerticalScrollBar().setUI(getScrollBarUI());
+		unstagedChangesRepo2ScrollPane.getHorizontalScrollBar().setUI(getScrollBarUI());
+		
 		try {
 			fillUnstagedChangesLists();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-
-		unstagedChangesRepo1List.setForeground(Color.RED);
-		unstagedChangesRepo2List.setForeground(Color.RED);
+	}
+	
+	private BasicScrollBarUI getScrollBarUI() {
+		return new BasicScrollBarUI() {
+		    @Override
+		    protected void configureScrollBarColors() {
+		        this.thumbColor = Color.GRAY;
+		        this.trackColor = Color.DARK_GRAY;
+		    }
+		};
 	}
 
 	private void fillUnstagedChangesLists() throws Exception {
@@ -309,9 +358,24 @@ public class MainFrame extends JFrame {
 
 	private void initializeStagedChangesLists() {
 		stagedChangesRepo1List = new JList<>();
-		stagedChangesRepo2List = new JList<>();
 		stagedChangesRepo1List.setSelectionModel(getDefaultSelectionModel());
+		stagedChangesRepo1List.setBackground(Color.DARK_GRAY);
+		
+		stagedChangesRepo1ScrollPane = new JScrollPane();
+		stagedChangesRepo1ScrollPane.setViewportView(stagedChangesRepo1List);
+		stagedChangesRepo1ScrollPane.setBorder(BORDER);
+		stagedChangesRepo1ScrollPane.getVerticalScrollBar().setUI(getScrollBarUI());
+		stagedChangesRepo1ScrollPane.getHorizontalScrollBar().setUI(getScrollBarUI());
+		
+		stagedChangesRepo2List = new JList<>();
 		stagedChangesRepo2List.setSelectionModel(getDefaultSelectionModel());
+		stagedChangesRepo2List.setBackground(Color.DARK_GRAY);
+		
+		stagedChangesRepo2ScrollPane = new JScrollPane();
+		stagedChangesRepo2ScrollPane.setViewportView(stagedChangesRepo2List);
+		stagedChangesRepo2ScrollPane.setBorder(BORDER);
+		stagedChangesRepo2ScrollPane.getVerticalScrollBar().setUI(getScrollBarUI());
+		stagedChangesRepo2ScrollPane.getHorizontalScrollBar().setUI(getScrollBarUI());
 
 		try {
 			fillStagedChangesLists();
@@ -366,8 +430,6 @@ public class MainFrame extends JFrame {
 		} else {
 			return new String[0];
 		}
-
-		return result.toArray(new String[0]);
 	}
 
 	private String[] getStagedChangesList(String path) throws Exception {
@@ -389,13 +451,39 @@ public class MainFrame extends JFrame {
 		while ((line = reader.readLine()) != null) {
 			result.add(line);
 		}
+		return result;
+	}
+	
+	private void initCommitMessageTextField() {
+		commitMessageTextArea = new JTextArea();
+		commitMessageTextArea.setBackground(Color.DARK_GRAY);
+		commitMessageTextArea.setForeground(Color.LIGHT_GRAY);
+				
+		commitMessageTextArea.setBorder(BORDER);
+	}
 
-		return result.toArray(new String[0]);
+	private void initLabels() {
+		unstagedChangesRepo1Label = new JLabel("Unstaged Changes");
+		unstagedChangesRepo1Label.setForeground(Color.LIGHT_GRAY);
+		
+		unstagedChangesRepo2Label = new JLabel("Unstaged Changes");
+		unstagedChangesRepo2Label.setForeground(Color.LIGHT_GRAY);
+		
+		stagedChangesRepo1Label = new JLabel("Staged Changes");
+		stagedChangesRepo1Label.setForeground(Color.LIGHT_GRAY);
+		
+		stagedChangesRepo2Label = new JLabel("Staged Changes");
+		stagedChangesRepo2Label.setForeground(Color.LIGHT_GRAY);
+		
+		commitMessageLabel = new JLabel("Commit Message");
+		commitMessageLabel.setForeground(Color.LIGHT_GRAY);
 	}
 
 	private void initStageChangesButton() {
 		stageChangesButton = new JButton("Stage Changes");
-
+		stageChangesButton.setBackground(Color.DARK_GRAY);
+		stageChangesButton.setForeground(Color.LIGHT_GRAY);
+		
 		stageChangesButton.addActionListener(e -> {
 
 			stageChangesFor(unstagedChangesRepo1List, repo1PathTextField);
@@ -429,6 +517,8 @@ public class MainFrame extends JFrame {
 
 	private void initUnstageChangesButton() {
 		unstageChangesButton = new JButton("Unstage Changes");
+		unstageChangesButton.setBackground(Color.DARK_GRAY);
+		unstageChangesButton.setForeground(Color.LIGHT_GRAY);
 
 		unstageChangesButton.addActionListener(e -> {
 
@@ -463,6 +553,8 @@ public class MainFrame extends JFrame {
 
 	private void initCommitButton() {
 		commitButton = new JButton("Commit");
+		commitButton.setBackground(Color.DARK_GRAY);
+		commitButton.setForeground(Color.LIGHT_GRAY);
 
 		commitButton.addActionListener(e -> {
 					
@@ -491,7 +583,6 @@ public class MainFrame extends JFrame {
 	}
 
 	private void commitChangesFor(JList<String> stagedChangesList, JTextField pathTextField) {
-
 		String command = "git commit -m \"" + commitMessageTextArea.getText() + "\"";
 		try {
 			executeCommand(command, pathTextField.getText());
